@@ -102,7 +102,7 @@ impl Application for Editor {
             } else {
                 match self.path.as_deref().and_then(Path::to_str) {
                     Some(path) => text(path).size(14),
-                    None => text(""),
+                    None => text("New File"),
                 }
             };
 
