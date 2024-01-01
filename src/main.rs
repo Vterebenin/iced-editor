@@ -1,16 +1,19 @@
 use iced::{
     executor,
-    widget::{
-        button, column, container, horizontal_space, row, text, text_editor, TextEditor,
-    },
-    Application, Command, Length, Settings, Theme,
+    widget::{button, column, container, horizontal_space, row, text, text_editor, TextEditor},
+    Application, Command, Element, Font, Length, Settings, Theme,
 };
+use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::io;
 
 fn main() -> iced::Result {
-    Editor::run(Settings::default())
+    Editor::run(Settings {
+        fonts: vec![include_bytes!("../fonts/editor-icons.ttf")
+            .as_slice()
+            .into()],
+        ..Settings::default()
+    })
 }
 
 struct Editor {
@@ -70,7 +73,7 @@ impl Application for Editor {
             Message::FileSaved(Ok(path)) => {
                 self.path = Some(path);
                 Command::none()
-            },
+            }
             Message::FileSaved(Err(err)) => {
                 self.error = Some(err);
                 Command::none()
@@ -90,10 +93,11 @@ impl Application for Editor {
 
     fn view(&self) -> iced::Element<'_, Message> {
         let controls = row![
-            button("New").on_press(Message::New),
-            button("Open").on_press(Message::Open),
-            button("Save").on_press(Message::Save),
-        ];
+            action(new_icon(), Message::New),
+            action(open_icon(), Message::Open),
+            action(save_icon(), Message::Save),
+        ]
+        .spacing(10);
         let input: TextEditor<_, _> = text_editor(&self.content).on_edit(Message::Edit).into();
 
         let status_bar = {
@@ -170,5 +174,25 @@ async fn save_file(path: Option<PathBuf>, text: String) -> Result<PathBuf, Error
         .map_err(|error| Error::IOFailed(error.kind()))?;
 
     Ok(path)
+}
 
+fn new_icon<'a>() -> Element<'a, Message> {
+    icon('\u{E800}')
+}
+fn save_icon<'a>() -> Element<'a, Message> {
+    icon('\u{E801}')
+}
+fn open_icon<'a>() -> Element<'a, Message> {
+    icon('\u{F115}')
+}
+
+fn icon<'a, Message>(codepoint: char) -> Element<'a, Message> {
+    const ICON_FONT: Font = Font::with_name("editor-icons");
+    text(codepoint).font(ICON_FONT).into()
+}
+
+fn action<'a>(content: Element<'a, Message>, on_press: Message) -> Element<'a, Message> {
+    button(container(content).width(30).center_x())
+        .on_press(on_press)
+        .into()
 }
